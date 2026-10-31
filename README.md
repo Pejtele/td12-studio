@@ -67,7 +67,8 @@ byte difference alone. See [research plan](docs/RESEARCH.md).
 ```sh
 .venv/bin/python -m td12_studio ports
 .venv/bin/python -m td12_studio identify
-.venv/bin/python -m td12_studio capture --label trigger-before --seconds 60
+.venv/bin/python -m td12_studio capture --label trigger-before
+# Capture stays armed until Ctrl+C; use --seconds N only for an explicit limit.
 .venv/bin/python -m td12_studio inspect capture.syx
 .venv/bin/python -m td12_studio diff before.syx after.syx
 .venv/bin/python -m unittest discover -s tests -v

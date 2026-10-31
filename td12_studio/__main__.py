@@ -1,5 +1,6 @@
 import argparse
 import json
+import math
 from pathlib import Path
 import queue
 import time
@@ -12,7 +13,7 @@ def main():
     sub.add_parser('gui')
     sub.add_parser('ports')
     p = sub.add_parser('identify'); p.add_argument('--input'); p.add_argument('--output')
-    p = sub.add_parser('capture'); p.add_argument('--input'); p.add_argument('--seconds', type=float, default=60)
+    p = sub.add_parser('capture'); p.add_argument('--input'); p.add_argument('--seconds', type=float, default=0, help='Capture duration; 0 listens until Ctrl+C (default)')
     p.add_argument('--label', default='capture'); p.add_argument('--directory', default='~/.local/share/td12-studio/captures')
     p = sub.add_parser('inspect'); p.add_argument('file', type=Path)
     p = sub.add_parser('diff'); p.add_argument('before', type=Path); p.add_argument('after', type=Path)
@@ -30,7 +31,7 @@ def main():
     if args.command == 'ports':
         print(json.dumps({'inputs': inputs, 'outputs': outputs}, indent=2)); return 0
     events = queue.Queue()
-    conn = Connection(choose_port(inputs, args.input), events.put)
+    conn = Connection(choose_port(inputs, args.input), events.put if args.command == 'identify' else lambda message: None)
     try:
         if args.command == 'identify':
             conn.identify(choose_port(outputs, args.output))
@@ -45,12 +46,18 @@ def main():
                         return 0 if pkt.kind == 'td12_identity' else 1
             print('No identity reply. Check both DIN connections and module power. No settings were sent.')
             return 2
-        if args.seconds <= 0:
-            raise ValueError('--seconds must be positive')
+        if not math.isfinite(args.seconds) or args.seconds < 0:
+            raise ValueError('--seconds must be finite and nonnegative; 0 means until stopped')
         path = conn.start_capture(args.directory, args.label)
         print(f'Listening: {path}\nInitiate BULK DUMP on the module; this command cannot request it remotely.', flush=True)
-        try: time.sleep(args.seconds)
-        except KeyboardInterrupt: pass
+        end = time.monotonic() + args.seconds if args.seconds else None
+        try:
+            while end is None or time.monotonic() < end:
+                if conn.input.error:
+                    raise RuntimeError('MIDI input failed: ' + conn.input.error)
+                time.sleep(.1)
+        except KeyboardInterrupt:
+            pass
         result = conn.stop_capture()
         print(json.dumps(result[1], indent=2))
         return 0 if result[1]['status'] == 'captured_data' else 1
