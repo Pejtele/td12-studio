@@ -25,13 +25,16 @@ prove an undocumented facility is impossible.
 ## Local hardware evidence, 2026-10-31
 
 - UM-ONE visible through Linux ALSA, independent of REAPER.
-- A single broadcast identity query was sent on its output.
-- No SysEx reply observed in four seconds. Cable return direction and power
-  were not independently confirmed. This is **inconclusive**, not proof that
-  identity queries are unsupported.
+- The initial identity attempt without both MIDI directions connected received no reply.
+- After the owner connected both DIN cables, identity was verified live:
+  `F0 7E 10 06 02 41 09 02 00 00 00 02 00 00 F7`.
+  Device ID is 17; revision bytes are recorded literally, not decoded as a
+  guessed firmware version.
+- The live test exposed a Python/RtMidi callback shutdown hang. The transport
+  now uses RtMidi's native input queue with polling and explicit ALSA on Linux.
+  A bounded identify/send/receive/close test then completed successfully.
 - No setting writes or bulk restores have been attempted.
-- Protocol tests use synthetic fixtures and the documented identity bytes;
-  no real TD-12 bulk capture is available yet.
+- No real TD-12 bulk capture is available yet.
 
 ## Next experiments
 

@@ -17,6 +17,10 @@ class MidiTests(unittest.TestCase):
         self.patch = patch('td12_studio.midi.backend')
         self.backend = self.patch.start().return_value
         self.addCleanup(self.patch.stop)
+        self.input_patch = patch('td12_studio.midi.PollingInput')
+        self.fake_input = self.input_patch.start().return_value
+        self.fake_input.error = None
+        self.addCleanup(self.input_patch.stop)
         self.connection = Connection('test input')
         self.addCleanup(self.connection.close)
 

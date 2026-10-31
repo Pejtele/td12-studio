@@ -3,13 +3,15 @@ from datetime import datetime
 from pathlib import Path
 import json
 import threading
+import sys
+import rtmidi
 import mido
 from .protocol import IDENTITY_REQUEST, inspect_dump
 
 
 def backend():
     # Mido's RtMidi default uses ALSA on Linux, CoreMIDI on macOS, WinMM on Windows.
-    return mido.Backend('mido.backends.rtmidi')
+    return mido.Backend('mido.backends.rtmidi/LINUX_ALSA' if sys.platform.startswith('linux') else 'mido.backends.rtmidi')
 
 
 def ports():
@@ -26,6 +28,44 @@ def choose_port(names, selector=None):
     return matches[0]
 
 
+class PollingInput:
+    """Poll RtMidi's native queue; avoid native-to-Python callback shutdown races."""
+    def __init__(self, name, callback):
+        api = rtmidi.API_LINUX_ALSA if sys.platform.startswith('linux') else rtmidi.API_UNSPECIFIED
+        self.rt = rtmidi.MidiIn(rtapi=api, name='TD-12 Studio', queue_size_limit=8192)
+        names = self.rt.get_ports()
+        if name not in names:
+            self.rt.delete()
+            raise ValueError('MIDI input disappeared: ' + name)
+        self.rt.open_port(names.index(name))
+        self.rt.ignore_types(sysex=False, timing=True, active_sense=True)
+        self.error = None
+        self.closed = False
+        self.stop = threading.Event()
+        self.thread = threading.Thread(target=self._run, args=(callback,), daemon=True)
+        self.thread.start()
+
+    def _run(self, callback):
+        try:
+            while not self.stop.is_set():
+                result = self.rt.get_message()
+                if result:
+                    callback(mido.Message.from_bytes(result[0]))
+                else:
+                    self.stop.wait(.005)
+        except Exception as e:
+            self.error = str(e)
+
+    def close(self):
+        if self.closed:
+            return
+        self.closed = True
+        self.stop.set()
+        self.thread.join()
+        self.rt.close_port()
+        self.rt.delete()
+
+
 class Connection:
     def __init__(self, input_name, on_message=lambda message: None):
         self._lock = threading.RLock()
@@ -33,7 +73,7 @@ class Connection:
         self.capture_path = None
         self.on_message = on_message
         self.error = None
-        self.input = backend().open_input(input_name, callback=self._receive)
+        self.input = PollingInput(input_name, self._receive)
 
     def _receive(self, message):
         with self._lock:
@@ -82,4 +122,6 @@ class Connection:
 
     def close(self):
         self.input.close()
+        if self.input.error:
+            self.error = self.input.error
         return self.stop_capture()
