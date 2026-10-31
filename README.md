@@ -4,8 +4,9 @@ An open-source project toward a screen-independent Roland TD-12 editor, for
 owners whose module LCD is fading or unusable.
 
 **Current release: read-only research prototype. It is not a working parameter
-editor or a replacement display yet.** No module settings are written. The only
-outbound MIDI message implemented is the standard universal identity query.
+editor or a replacement display yet.** No module settings are written. The normal GUI/CLI sends only the standard universal identity query. A separate
+research script probes one standard Roland RQ1 read request; TD-12 support is
+unverified, and it does not send parameter data.
 
 ## What works
 

@@ -71,3 +71,24 @@ The existing TD-12/20 LCD emulator reads the two Epson SED1565 controllers' bus
 using a logic analyser. It could restore visibility when MIDI cannot expose
 settings. This needs a hardware connection inside the module and is distinct
 from our USB-MIDI editor. No internal probing has been performed here.
+
+## Second capture and bounded read experiment
+
+The second, persistent ALL capture contains 2,408 checksum-valid TD1 packets
+and 306,734 unique bytes. All 276,004 bytes shared with the initial capture are
+identical; there are no addresses exclusive to the first. The second contains
+30,730 additional contiguous pattern bytes, demonstrating that the first
+capture did not include the whole pattern region. Setup, all four trigger
+banks, all 50 kits and all eight percussion sets have identical coverage.
+The first capture must not be described as a complete full backup.
+
+One standard Roland RQ1 (`11`) request targeted bank 1 with the twice-observed
+length 1,843 bytes. Only an exact echo of that request was received; no DT1
+bank data arrived within four seconds. The echo's origin (module Soft Thru or
+routing) is not established. This does not establish remote read support.
+The separate script `scripts/probe_read_request.py` records the exact request
+and response report; normal GUI/CLI operations still send only identity.
+
+Next mapping experiment: rename only the first character of the current
+trigger bank, then capture ALL TRIG BANKS. A name-only change avoids altering
+pad response. Restore the original character and recapture to verify A/B/A.
