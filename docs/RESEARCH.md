@@ -1,0 +1,68 @@
+# TD-12 protocol research
+
+## Established from Roland's MIDI Implementation v1.00 (2004-12-17)
+
+Source: https://cdn.roland.com/assets/media/pdf/TD-12_MI.pdf
+
+- pp.5,9: universal non-realtime identity request/reply; default device ID byte
+  `10` (displayed 17). Family bytes `09 02`, family-number bytes `00 00`.
+- pp.5,9: Roland manufacturer `41`, model ID `00 00 09`, command DT1 `12`.
+- Four 7-bit address bytes, then data, Roland checksum, and F7.
+- Checksum covers address plus data; their sum plus checksum is zero modulo 128.
+- p.9: module-initiated bulk dump transmits DT1. Packets up to 128 data bytes,
+  at least 40 ms between successive DT1 packets.
+- p.10 bulk blocks: setup `70 00 00 00`; four trigger banks `71 bb 00 00`;
+  50 kits `72 kk 00 00`; eight percussion sets `73 pp 00 00`;
+  pattern information `74 00 00 00`; pattern data `75 00 00 00`.
+- Setup dump excludes Device ID and LCD Contrast.
+
+The public map has block starts only. There are no published individual
+parameter offsets or block lengths. The receive section names identity query
+and DT1, but does not specify RQ1 (`11`). Do not assume generic Roland RQ1 works
+on this model, nor invent a block length. Absence of documentation does not
+prove an undocumented facility is impossible.
+
+## Local hardware evidence, 2026-10-31
+
+- UM-ONE visible through Linux ALSA, independent of REAPER.
+- A single broadcast identity query was sent on its output.
+- No SysEx reply observed in four seconds. Cable return direction and power
+  were not independently confirmed. This is **inconclusive**, not proof that
+  identity queries are unsupported.
+- No setting writes or bulk restores have been attempted.
+- Protocol tests use synthetic fixtures and the documented identity bytes;
+  no real TD-12 bulk capture is available yet.
+
+## Next experiments
+
+1. Confirm the two physical MIDI directions, identify the module, preserve reply
+   including raw revision bytes without guessing the firmware version encoding.
+2. Capture a baseline SETUP and all trigger banks, plus the active kit. Capture
+   each block twice without changes to identify volatile differences and stable
+   lengths. Verify repeated block coverage, checksums, and device ID.
+3. Select one reversible setting, preferably an unused trigger input, with the
+   owner. Record its original value. Change one step, capture the same block,
+   restore the value, and capture again. Compare A/B/A by address.
+4. Repeat with multiple values and another input to establish encoding, bounds,
+   and stride. Keep evidence and confidence alongside every map field.
+5. Only after baseline backups and mapping evidence: construct an offline edit,
+   validate that exactly the intended bytes changed, then test controlled
+   restore/readback on an unused bank with explicit experiment scope.
+6. If direct reads/writes are unsupported: analyse official firmware offline
+   and/or existing software using appropriate tools (potentially REA). Do not
+   flash modified firmware to investigate the protocol.
+
+## Release criteria for actual parameter editing
+
+- Named fields tied to repeated hardware experiments, not guessed offsets.
+- Tested backup/restore and known complete block lengths for supported firmware.
+- Original bytes preserved, minimal edits, visible diff and verified readback.
+- Every supported field has a bounded range and explicit encoding.
+- Failure and device disconnect do not silently claim success.
+
+## Parallel hardware route
+
+The existing TD-12/20 LCD emulator reads the two Epson SED1565 controllers' bus
+using a logic analyser. It could restore visibility when MIDI cannot expose
+settings. This needs a hardware connection inside the module and is distinct
+from our USB-MIDI editor. No internal probing has been performed here.
