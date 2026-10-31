@@ -34,7 +34,9 @@ prove an undocumented facility is impossible.
   now uses RtMidi's native input queue with polling and explicit ALSA on Linux.
   A bounded identify/send/receive/close test then completed successfully.
 - No setting writes or bulk restores have been attempted.
-- No real TD-12 bulk capture is available yet.
+- First real ALL dump captured: 2,167 checksum-valid DT1 packets, 276,004 unique
+  data bytes, all documented block categories present. See [capture analysis](FIRST-CAPTURE.md).
+  Completeness has not yet been established by a repeated dump.
 
 ## Next experiments
 
