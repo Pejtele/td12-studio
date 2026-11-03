@@ -5,7 +5,7 @@ import {
 } from './td12.js';
 
 // Set to a Ko-fi / Gumroad / Buy Me a Coffee URL to show the support section.
-const SUPPORT_URL = '';
+const SUPPORT_URL = 'https://ko-fi.com/pejtele';
 
 const IDLE_MS = 1500;     // silence that ends a dump
 const GAP_MS = 60;        // between DT1 packets (Roland: at least 40 ms)
