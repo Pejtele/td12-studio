@@ -11,6 +11,7 @@ def main():
     parser = argparse.ArgumentParser(description='TD-12 Studio — read-only MIDI research tools')
     sub = parser.add_subparsers(dest='command', required=True)
     sub.add_parser('gui')
+    sub.add_parser('editor')
     sub.add_parser('ports')
     p = sub.add_parser('identify'); p.add_argument('--input'); p.add_argument('--output')
     p = sub.add_parser('capture'); p.add_argument('--input'); p.add_argument('--seconds', type=float, default=0, help='Capture duration; 0 listens until Ctrl+C (default)')
@@ -20,6 +21,9 @@ def main():
     args = parser.parse_args()
     if args.command == 'gui':
         from .gui import run
+        return run()
+    if args.command == 'editor':
+        from .editor import run
         return run()
     if args.command == 'inspect':
         report, _ = inspect_dump(args.file.read_bytes()); print(json.dumps(report, indent=2))

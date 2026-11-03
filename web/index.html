@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TD-12 Trigger Editor</title>
+<style>
+  :root {
+    --bg: #f6f5f2; --panel: #ffffff; --text: #1d1d1b; --muted: #6b6a66; --line: #dddbd5;
+    --accent: #c4471c; --accent-text: #ffffff; --changed: #ffe2c9; --ok: #2f7d32; --bad: #b3261e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #161615; --panel: #20201e; --text: #ecebe7; --muted: #a09e98; --line: #3a3936;
+            --changed: #5a3418; --ok: #7fc583; --bad: #f2867c; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1280px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  h2 { font-size: 16px; margin: 0 0 8px; }
+  p { margin: 0 0 8px; }
+  .muted { color: var(--muted); }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+            padding: 16px; margin-top: 16px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+  button, select, input { font: inherit; color: inherit; }
+  button { border: 1px solid var(--line); background: var(--panel); border-radius: 8px;
+           padding: 6px 14px; cursor: pointer; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+  button:disabled { opacity: .45; cursor: default; }
+  select, input[type=number] { background: var(--bg); border: 1px solid var(--line);
+           border-radius: 6px; padding: 3px 6px; }
+  input[type=number] { width: 74px; }
+  #status { font-weight: 600; }
+  .ok { color: var(--ok); } .bad { color: var(--bad); }
+  kbd { border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; font-size: 13px; }
+  .grid-wrap { overflow-x: auto; }
+  table { border-collapse: collapse; min-width: 980px; }
+  th, td { padding: 4px 6px; text-align: left; white-space: nowrap; }
+  th { font-size: 13px; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--line); }
+  .changed { background: var(--changed); }
+  #changes { white-space: pre-line; }
+  ol { margin: 0; padding-left: 20px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>TD-12 Trigger Editor</h1>
+  <p class="muted">Edit the trigger settings of a Roland TD-12 from your computer, without its screen.
+    Independent project, not affiliated with Roland. Works in Chrome or Edge (Web MIDI).</p>
+
+  <section>
+    <h2>1 · Connect</h2>
+    <p class="muted">Both MIDI cables: interface OUT → TD-12 MIDI IN, and TD-12 MIDI OUT/THRU → interface IN.</p>
+    <div class="row">
+      <button id="connect" class="primary">Connect MIDI</button>
+      <label>From TD-12 <select id="input" disabled></select></label>
+      <label>To TD-12 <select id="output" disabled></select></label>
+      <button id="identify" disabled>Check module</button>
+    </div>
+    <p id="identity" class="muted" style="margin-top:8px">Not connected.</p>
+  </section>
+
+  <section>
+    <h2>2 · Read from the TD-12</h2>
+    <p>On the module press: <kbd>SETUP</kbd> → <kbd>F1</kbd> (MIDI) → <kbd>F5</kbd> (BULK) →
+      choose <b>ALL TRIG BANKS</b> → <kbd>F5</kbd> (EXECUTE).</p>
+    <p class="muted">With an unreadable screen: <kbd>SETUP</kbd> → <kbd>F1</kbd> → <kbd>F5</kbd>, then turn
+      the dial <b>left 20–30 clicks</b> (this always lands on the first option, ALL), then
+      <b>right exactly 4 clicks</b> (SETUP, ALL DRUM KITS, 1 DRUM KIT, ALL TRIG BANKS), then <kbd>F5</kbd>.
+      If something else arrives, this page says what it was. ALL also works, it just takes a few
+      minutes. A dump only sends data; it changes nothing on the module.</p>
+    <p id="status">Waiting.</p>
+  </section>
+
+  <section>
+    <h2>3 · Edit</h2>
+    <div class="row" style="margin-bottom:10px">
+      <label>Bank <select id="bank" disabled></select></label>
+      <label>XStick Thrshld <input id="xstick" type="number" min="0" max="127" disabled></label>
+      <button id="revert" disabled>Revert edits</button>
+      <button id="send" class="primary" disabled>Send to TD-12</button>
+      <button id="backup" disabled>Download backup</button>
+      <label><button id="restore-pick" disabled>Restore a backup…</button>
+        <input id="restore-file" type="file" accept=".syx" hidden></label>
+    </div>
+    <div class="grid-wrap"><table id="grid"></table></div>
+    <p id="changes" class="muted" style="margin-top:10px">No data yet.</p>
+  </section>
+
+  <section>
+    <h2>Safety</h2>
+    <ol class="muted">
+      <li>Only the selected bank is sent. Every other byte of it is kept exactly as read.</li>
+      <li>Before the first send, a backup of the read is downloaded. Keep it.</li>
+      <li>After sending, dump again: the page checks the module byte for byte.</li>
+      <li>Writing is enabled only for module versions already verified on real hardware
+        (revision 00 02 00 00). Other versions can read and download backups; please report them.</li>
+    </ol>
+  </section>
+
+  <section id="support" hidden>
+    <h2>Support this project</h2>
+    <p>Free to use. If it saved you a replacement screen, a contribution keeps it going
+      (pay what you want, $10 suggested).</p>
+    <p><a id="support-link" href="#" target="_blank" rel="noopener">Support the TD-12 Trigger Editor</a></p>
+  </section>
+</main>
+<script type="module" src="app.js"></script>
+</body>
+</html>

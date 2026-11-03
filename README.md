@@ -1,105 +1,104 @@
-# TD-12 Studio
+# TD-12 Trigger Editor
 
-An open-source project toward a screen-independent Roland TD-12 editor, for
-owners whose module LCD is fading or unusable.
+Edit the trigger settings of a **Roland TD-12** from your computer, for owners
+whose module screen is fading or dead. It works in the browser, with nothing to
+install.
 
-**Current release: read-only research prototype. It is not a working parameter
-editor or a replacement display yet.** No module settings are written. The normal GUI/CLI sends only the standard universal identity query. A separate
-research script probes one standard Roland RQ1 read request; TD-12 support is
-unverified, and it does not send parameter data.
+**→ Open the editor: `https://<your-github-name>.github.io/td12-studio/`**
+*(Chrome or Edge on Windows, macOS, Linux or ChromeOS. Safari has no Web MIDI.)*
 
-## What works
+Independent project, not affiliated with or endorsed by Roland. "Roland" and
+"TD-12" are trademarks of Roland Corporation, used only to say what this works with.
 
-- MIDI input/output selection and module identity query.
-- Live note number, velocity, and channel display.
-- Capture module-initiated SysEx dumps to standard `.syx` files.
-- Recognize TD-12 bulk blocks and validate Roland checksums.
-- Report corrupt, truncated, conflicting, and empty captures.
-- Compare bytes by address even when packet boundaries differ.
-- Keep missing regions separate from changed values.
-- A GTK4 Linux desktop UI and a portable Python command-line core.
+## What you can edit
 
-A checksum-valid capture is **not evidence of a complete backup**. Published
-block lengths are unavailable, so the program explicitly reports completeness
-as unknown. It does not implement restore or transmission of captured data.
+For each of the 12 trigger inputs (KICK, SNARE, TOM 1–3, HI-HAT, CRASH 1–2,
+RIDE, EDGE, AUX 1–2), in any of the 4 trigger banks:
 
-## Install on Arch / Omarchy
+- **Trig Type** (PD125 … RT3T). Choosing a type loads that pad's defaults,
+  exactly as the module does.
+- Sensitivity, Threshold, Curve, Scan Time, Retrig Cancel, Mask Time,
+  Rim Gain, RimShot Adjust, Xtalk Cancel.
+- XStick Threshold.
 
-System dependencies: Python, GTK4, PyGObject, ALSA, plus a working MIDI interface.
-The GUI uses the system GTK/PyGObject packages. Source builds of python-rtmidi may
-need a C++ compiler and ALSA development files; use binary wheels where available.
+Not yet: hi-hat pedal settings, 3-way ride, drum kits, patterns.
+
+## What you need
+
+- A USB-MIDI interface. A Roland UM-ONE works. No-name cables often garble SysEx;
+  the editor detects that and refuses to report success.
+- **Both** MIDI cables: interface OUT → TD-12 MIDI IN, and TD-12 MIDI OUT/THRU →
+  interface IN. On the UM-ONE, the plug labels name the TD-12 socket they go to.
+
+## How it works
+
+The TD-12 has no "send me your settings" command, so each read starts on the module:
+
+1. In the editor click **Connect MIDI** and allow MIDI access.
+2. On the TD-12: **SETUP → F1 (MIDI) → F5 (BULK)**, select **ALL TRIG BANKS**, press **F5 (EXECUTE)**.
+3. Edit in the browser, click **Send**. A backup of what you read downloads first.
+4. Dump **ALL TRIG BANKS** once more. The editor compares every byte and shows
+   **✓ Verified** only if the module now holds exactly what was sent.
+
+### With an unreadable screen
+
+After **SETUP → F1 → F5**: turn the dial **left 20–30 clicks** (you land on the
+first option, ALL), then **right exactly 4 clicks** (SETUP, ALL DRUM KITS,
+1 DRUM KIT, ALL TRIG BANKS), then **F5**. If something else arrives, the editor
+tells you what it was. A dump only sends data; it never changes the module.
+
+## Safety
+
+- Only the bank you edit is sent. Every byte of it that you did not change is
+  sent back exactly as read, including data this project does not understand.
+- **Restore a backup…** puts all four banks back from a downloaded `.syx` file.
+- Writing is enabled only for firmware already verified on real hardware
+  (identity revision `00 02 00 00`). Other versions open **read-only**: please
+  report them (see below) so they can be checked and added.
+- These are settings in the module's memory, not firmware. A bad send can scramble
+  trigger settings, which a backup or the module's factory reset fixes.
+
+Use at your own risk; see the license.
+
+## Status and evidence
+
+Verified on one TD-12 (revision `00 02 00 00`) on 2026-11-03:
+restore of an unchanged bank, a one-byte rename, every field mapped by
+one-change-per-dump experiments and read back from the display, all 26 trig
+types recorded from the module, and editor sends verified by fresh dumps.
+Details: [docs/TRIGGER-MAP.md](docs/TRIGGER-MAP.md).
+
+**Wanted: reports from other TD-12s.** Open an issue with the revision shown
+after "Check module" and whether a read worked. To help map a new firmware,
+see [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## For developers
+
+| Path | What |
+|---|---|
+| `web/` | The browser editor (`td12.js` codec, `app.js` page logic). Plain ES modules, no build step. |
+| `td12_studio/` | Python reference: codec (`trigger.py`, `protocol.py`), GTK editor, CLI. |
+| `td12_studio/trig_types.json` | Trig type defaults recorded from the module. |
+| `scripts/` | Hardware research: `map_session.py` (records dumps and diffs), `restore_test.py`. |
+| `docs/` | Protocol research and the trigger map. |
 
 ```sh
-python -m venv --system-site-packages .venv
-.venv/bin/pip install -e .
-.venv/bin/python -m td12_studio gui
-```
+# browser editor, locally (Web MIDI needs localhost or https)
+python3 -m http.server 8123      # then open http://localhost:8123/web/
+node web/td12.test.mjs [your-dump.syx ...]
 
-The core CLI is intended to work on Linux, macOS, and Windows via RtMidi;
-only Linux has been exercised so far. GTK4 packaging for other platforms is
-not provided. There is no background service or MIDI forwarding.
-
-## Connections
-
-Use both directions for identification: MIDI interface OUT → TD-12 MIDI IN;
-TD-12 MIDI OUT → interface IN. On the UM-ONE, follow the **CONNECT TO MIDI IN/OUT**
-labels: those labels describe the module socket, not the interface direction.
-Capturing a module-initiated dump only needs the TD-12 OUT connection.
-Opening our input port adds a listener; it does not remove REAPER's MIDI routes.
-
-## Capture and compare
-
-1. Connect in the UI and give the capture a descriptive name.
-2. Click **Start capture**.
-3. On the TD-12, choose **SETUP → F1 MIDI → F5 BULK**, select the desired
-   block, and press **F5 EXECUTE**. Do not use factory reset or bulk receive.
-4. After transmission finishes, click **Stop and inspect**.
-5. Captures and JSON reports are saved in `~/.local/share/td12-studio/captures`.
-6. Use **Compare two captures** to compare a baseline and a second capture.
-
-The need to initiate bulk dumps on the module is a current limitation for
-owners with completely dead screens. We have not established remote dump
-requests or virtual front-panel commands.
-
-Research experiments should change only one known setting at a time and return
-it to its recorded starting value. Never infer a parameter's meaning from one
-byte difference alone. See [research plan](docs/RESEARCH.md).
-
-```sh
-.venv/bin/python -m td12_studio ports
-.venv/bin/python -m td12_studio identify
-.venv/bin/python -m td12_studio capture --label trigger-before
-# Capture stays armed until Ctrl+C; use --seconds N only for an explicit limit.
-.venv/bin/python -m td12_studio inspect capture.syx
-.venv/bin/python -m td12_studio diff before.syx after.syx
+# Python tools (Linux tested; GTK4 for the desktop editor)
+python -m venv --system-site-packages .venv && .venv/bin/pip install -e .
+.venv/bin/python -m td12_studio editor
 .venv/bin/python -m unittest discover -s tests -v
 ```
 
-## Standing on existing work
+Built on Roland's public
+[TD-12 MIDI Implementation](https://cdn.roland.com/assets/media/pdf/TD-12_MI.pdf)
+(framing, checksum, bulk block addresses) plus hardware experiments for
+everything inside the blocks. Related: the
+[TD-12/20 LCD emulator](https://github.com/Aleksa-Stojano/ROLAND_TD_12_20_LCD_EMULATOR)
+(a hardware route; none of its code is used here) and
+[Erriez MIDI SYSEX-IO](https://github.com/Erriez/midi-sysex-io) for plain backups.
 
-- [Roland TD-12 MIDI Implementation](https://cdn.roland.com/assets/media/pdf/TD-12_MI.pdf):
-  official identity message, DT1 framing, checksum, and bulk address blocks.
-- [Roland TD-12 support](https://www.roland.com/us/support/by_product/td-12/owners_manuals/):
-  owner's manual and model documentation.
-- [Erriez MIDI SYSEX-IO](https://github.com/Erriez/midi-sysex-io):
-  existing open-source Windows/Linux backup utility originally used with TD-12.
-- [TD-12/20 LCD emulator](https://github.com/Aleksa-Stojano/ROLAND_TD_12_20_LCD_EMULATOR):
-  existing GPLv3 LCD bus decoder. It requires internal hardware probing;
-  it does not obtain the display through MIDI. It remains a separate project;
-  none of its code is copied here.
-- [Mido](https://github.com/mido/mido) and
-  [python-rtmidi](https://github.com/SpotlightKid/python-rtmidi): MIDI transport.
-- [REA](https://rea.tools/): a possible later analysis frontend for firmware or
-  existing software. It is not a substitute for a verified device protocol.
-
-Roland's document is linked, not redistributed with the source. Real personal
-backups, firmware, and downloaded reference materials are excluded from Git.
-No firmware modification or update is part of this prototype.
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md). Contributions most needed: documented
-capture experiments, parameter maps with evidence, and testing on additional
-firmware revisions. TD-20 compatibility is not claimed.
-
-MIT license for this project's code. Independent project, not affiliated with Roland.
+MIT license.

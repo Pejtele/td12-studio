@@ -16,6 +16,11 @@ an experiment report. Current tests run with Python's standard unittest module:
 python -m unittest discover -s tests -v
 ```
 
-The current transport must remain read-only except for identity queries. Add
-parameter transmission only alongside a separately reviewed hardware test plan,
-verified mappings, backup handling, and readback evidence.
+Writes exist only for verified layouts (`KNOWN_REVISIONS` in `web/td12.js`).
+To add another firmware revision: capture ALL TRIG BANKS, confirm the bank size
+is 1,843 bytes, use `scripts/map_session.py` to repeat a few one-change-per-dump
+experiments from docs/TRIGGER-MAP.md, and report the diffs. A revision is added
+only after a send was verified by a fresh dump on that hardware.
+
+Browser codec tests: `node web/td12.test.mjs [dump.syx ...]` (dumps are optional
+and stay private; with them, the JS output is cross-checked against Python).
