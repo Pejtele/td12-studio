@@ -4,7 +4,7 @@ Edit the trigger settings of a **Roland TD-12** from your computer, for owners
 whose module screen is fading or dead. It works in the browser, with nothing to
 install.
 
-**→ Open the editor: `https://<your-github-name>.github.io/td12-studio/`**
+**→ Open the editor: [pejtele.github.io/td12-studio](https://pejtele.github.io/td12-studio/)**
 *(Chrome or Edge on Windows, macOS, Linux or ChromeOS. Safari has no Web MIDI.)*
 
 Independent project, not affiliated with or endorsed by Roland. "Roland" and
