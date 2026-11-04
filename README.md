@@ -23,6 +23,8 @@ RIDE, EDGE, AUX 1–2), in any of the 4 trigger banks:
 
 Not yet: hi-hat pedal settings, 3-way ride, drum kits, patterns.
 
+What each setting does, with examples: [settings manual](https://pejtele.github.io/td12-studio/web/manual.html).
+
 ## What you need
 
 - A USB-MIDI interface. A Roland UM-ONE works. No-name cables often garble SysEx;

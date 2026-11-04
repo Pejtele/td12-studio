@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TD-12 Settings Manual</title>
+<style>
+  :root {
+    --bg: #f6f5f2; --panel: #ffffff; --text: #1d1d1b; --muted: #6b6a66; --line: #dddbd5;
+    --accent: #c4471c; --tip: #f3efe4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #161615; --panel: #20201e; --text: #ecebe7; --muted: #a09e98; --line: #3a3936;
+            --accent: #f08a5d; --tip: #2a2925; }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 820px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 28px; line-height: 1.2; margin: 0 0 6px; }
+  h2 { font-size: 21px; line-height: 1.25; margin: 0 0 4px; scroll-margin-top: 16px; }
+  h3 { font-size: 15px; margin: 14px 0 4px; }
+  p { margin: 0 0 10px; }
+  ul, ol { margin: 0 0 10px; padding-left: 22px; }
+  li { margin-bottom: 4px; }
+  a { color: var(--accent); }
+  .muted { color: var(--muted); }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+            padding: 18px; margin-top: 16px; }
+  .meta { color: var(--muted); font-size: 14px; margin-bottom: 12px; }
+  .tip { background: var(--tip); border-radius: 8px; padding: 10px 12px; margin-top: 10px; font-size: 15px; }
+  .toc { columns: 2; column-gap: 24px; list-style: none; padding: 0; margin: 0; }
+  .wrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { padding: 5px 8px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; white-space: nowrap; }
+  #defaults td { white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .curves { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 10px; margin: 8px 0 10px; }
+  figure { margin: 0; font-size: 13px; text-align: center; }
+  figure svg { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 6px; }
+  @media (max-width: 520px) { .toc { columns: 1; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>TD-12 Settings Manual</h1>
+  <p class="muted">Every trigger setting in the <a href="index.html">TD-12 Trigger Editor</a>: what it does,
+    what it can affect, and examples. Independent project, not affiliated with Roland.</p>
+
+  <section>
+    <h2>How to read this</h2>
+    <p>The descriptions and ranges follow Roland's TD-12 Owner's Manual, pages 44–51. Parts marked
+      <b>Tip</b> are practical starting points written for this project, not Roland's instructions
+      and not tested on every pad. Treat them as things to try.</p>
+    <ul class="toc">
+      <li><a href="#where">Where settings live</a></li>
+      <li><a href="#type">Trig Type</a></li>
+      <li><a href="#sens">Sensitivity</a></li>
+      <li><a href="#thresh">Threshold</a></li>
+      <li><a href="#curve">Curve</a></li>
+      <li><a href="#scan">Scan Time</a></li>
+      <li><a href="#retrig">Retrig Cancel</a></li>
+      <li><a href="#mask">Mask Time</a></li>
+      <li><a href="#rimgain">Rim Gain</a></li>
+      <li><a href="#rimshot">RimShot Adjust</a></li>
+      <li><a href="#xstick">XStick Threshold</a></li>
+      <li><a href="#xtalk">Xtalk Cancel</a></li>
+      <li><a href="#fix">Find the setting by symptom</a></li>
+      <li><a href="#order">A tuning order</a></li>
+      <li><a href="#defaults">Default values per pad</a></li>
+      <li><a href="#missing">Not in the editor yet</a></li>
+    </ul>
+  </section>
+
+  <section id="where">
+    <h2>Where settings live</h2>
+    <ul>
+      <li><b>Four trigger banks.</b> Each bank holds its own settings for all inputs, so you can keep
+        one bank per drum set or room.</li>
+      <li><b>Only the active bank affects your playing.</b> The active bank is chosen on the module
+        (<b>TRIGGER → F1 BANK</b>). Editing another bank is safe for experiments, but you won't hear
+        a difference until it's selected. The editor can't show which bank is active yet.</li>
+      <li><b>Software drums:</b> if you play a drum library over MIDI, these settings reach it through
+        which notes get sent and how hard they are. The TD-12's own volume and sound settings aren't
+        part of this.</li>
+    </ul>
+  </section>
+
+  <section id="type">
+    <h2>Trig Type</h2>
+    <p class="meta">PD125 … RT3T · per input · module: TRIGGER → F1 BANK</p>
+    <p>Tells the module which pad or trigger is plugged into that input. Each type is a package of
+      settings suited to that model, so this is always the first thing to get right.</p>
+    <h3>What it can affect</h3>
+    <ul>
+      <li>Every setting on this page except Xtalk Cancel, because choosing a type loads that pad's
+        <a href="#defaults">defaults</a> and <b>overwrites your adjustments</b> on that input.</li>
+      <li>Internal settings you can't see, which is why setting the correct type matters even if the
+        visible numbers look fine.</li>
+    </ul>
+    <h3>Examples</h3>
+    <ul>
+      <li>A PD-105 snare set to PD100: dynamics and rim response may feel wrong even though the pad
+        is healthy. Set it to PD105.</li>
+      <li>A PD-85: use <b>PD80R</b>, which covers PD-85, PD-80R and PD-80. A KD-85: use <b>KD80</b>.</li>
+      <li>A non-Roland pad: start with <b>PAD1</b> or <b>PAD2</b>, then adjust by feel.</li>
+      <li>An acoustic drum trigger: RT7K, RT5S or RT3T, for the RT-7K, RT-5S and RT-3T.</li>
+    </ul>
+    <p class="tip"><b>Tip:</b> note your custom values before changing type, or keep a backup.</p>
+  </section>
+
+  <section id="sens">
+    <h2>Sensitivity</h2>
+    <p class="meta">1–32 · per input · module: TRIGGER → F2 BASIC</p>
+    <p>How much output you get for a given hit. Higher means a soft hit can already be loud. Lower
+      means even a hard hit stays quieter.</p>
+    <h3>What it can affect</h3>
+    <ul>
+      <li>Overall loudness of the pad, and how hard you must play to reach full level.</li>
+      <li>Ghost notes: too low and they get lost.</li>
+      <li>Dynamic range: too high and normal and hard hits all reach maximum and sound the same.</li>
+    </ul>
+    <h3>Examples</h3>
+    <ul>
+      <li>Normal and hard snare hits all sound identical (MIDI velocity stuck at 127): lower it.</li>
+      <li>You have to hit very hard to get a strong sound: raise it.</li>
+      <li>Soft ghost notes disappear: raise it, and check <a href="#thresh">Threshold</a> isn't blocking them.</li>
+    </ul>
+    <p class="tip"><b>Tip:</b> change 1–2 steps at a time. Play your softest ghost note and your
+      hardest accent, and aim to keep both clearly different.</p>
+  </section>
+
+  <section id="thresh">
+    <h2>Threshold</h2>
+    <p class="meta">0–31 · per input · module: TRIGGER → F2 BASIC</p>
+    <p>The minimum hit strength that counts. Anything below it makes no sound at all.</p>
+    <h3>What it can affect</h3>
+    <ul>
+      <li>False triggers from vibrations, for example from the stand or neighbouring pads.</li>
+      <li>The softest notes you can play: set too high, they vanish.</li>
+    </ul>
+    <h3>Examples</h3>
+    <ul>
+      <li>A tom sounds faintly when you play the kick: raise that tom's Threshold step by step until it stops.</li>
+      <li>Very quiet ghost notes or soft ride taps go missing: lower it.</li>
+    </ul>
+    <p class="tip"><b>Tip:</b> Threshold is a gate, not a volume control. Notes above it keep their
+      normal level, and notes below it are simply gone.</p>
+  </section>
+
+  <section id="curve">
+    <h2>Curve</h2>
+    <p class="meta">LINEAR, EXP1, EXP2, LOG1, LOG2, SPLINE, LOUD1, LOUD2 · per input · module: TRIGGER → F2 BASIC</p>
+    <p>How hit strength turns into volume. The same hit can come out louder or softer depending on the curve.</p>
+    <div class="curves" id="curves" role="img" aria-label="Rough shapes of the eight velocity curves"></div>
+    <p class="muted" style="font-size:14px">Rough shapes for orientation, not exact graphs. Left to right is hit strength; bottom to top is volume.</p>
+    <ul>
+      <li><b>LINEAR:</b> the standard and most natural response.</li>
+      <li><b>EXP1, EXP2:</b> most of the change happens in harder playing. Soft notes stay soft.</li>
+      <li><b>LOG1, LOG2:</b> most of the change happens in softer playing. Medium hits get loud quickly.</li>
+      <li><b>SPLINE:</b> extreme changes in response to dynamics.</li>
+      <li><b>LOUD1, LOUD2:</b> very little dynamic response, so levels stay strong. Can help keep drum triggers stable.</li>
+    </ul>
+    <h3>Examples</h3>
+    <ul>
+      <li>You want accents to really jump out from the backbeat: try EXP1.</li>
+      <li>Soft playing feels too quiet and flat: try LOG1.</li>
+      <li>A kick trigger should hit the same on every note: try LOUD1.</li>
+    </ul>
+    <p class="tip"><b>Tip:</b> set <a href="#sens">Sensitivity</a> first and change the curve afterwards.
+      If your drum software or DAW also has a velocity curve, change only one of them at a time.</p>
+  </section>
+
+  <section id="scan">
+    <h2>Scan Time</h2>
+    <p class="meta">0–4.0 ms · per input · module: TRIGGER → F1 BANK → F5 ADVANCE → F1 SCAN</p>
+    <p>How long the module looks at the signal before deciding how hard the hit was. Pads and triggers
+      differ in how fast their signal rises, so too short a time can misjudge the hit.</p>
+    <h3>What it can affect</h3>
+    <ul>
+      <li>Consistency: identical hits coming out at different volumes.</li>
+      <li>Delay: a longer time means the sound starts later.</li>
+    </ul>
+    <h3>Examples</h3>
+    <ul>
+      <li>Hits of the same strength jump between loud and quiet: raise it.</li>
+      <li>Roland's method: hit steadily at one strength, raise the value from 0 until the volume settles
+        at its loudest, then check soft and hard hits still respond properly. Use the lowest value that works.</li>
+      <li>Going from 2.0 to 4.0 ms adds up to 2 ms of delay, about the same as moving 70 cm further from a speaker.</li>
+    </ul>
+  </section>
+
+  <section id="retrig">
+    <h2>Retrig Cancel</h2>
+    <p class="meta">1–16 · per input · module: TRIGGER → F1 BANK → F5 ADVANCE → F1 SCAN</p>
+    <p>Filters out false extra hits caused by the fading end of the trigger signal. Especially
+      important with acoustic drum triggers, whose signals can be irregular.</p>
+    <h3>What it can affect</h3>
+    <ul>
+      <li>Double notes from a single hit.</li>
+      <li>Fast playing: too high and notes in rolls can be dropped.</li>
+    </ul>
+    <h3>Examples</h3>
+    <ul>
+      <li>One tom hit sounds twice: while hitting repeatedly, raise it until the extra note stops.</li>
+      <li>Buzz or press rolls lose notes after you raised it: lower it again and try
+        <a href="#mask">Mask Time</a> instead.</li>
+    </ul>
+    <p class="tip"><b>Tip:</b> use the lowest value that stops the double notes.</p>
+  </section>
+
+  <section id="mask">
+    <h2>Mask Time</h2>
+    <p class="meta">0–64 ms · per input · module: TRIGGER → F1 BANK → F5 ADVANCE → F1 SCAN</p>
+    <p>After a hit, the module ignores that pad completely for this many milliseconds.</p>
+    <h3>What it can affect</h3>
+    <ul>
+      <li>Double triggers from a beater bouncing back or staying on the head.</li>
+      <li>Your top speed: any real note inside the window is lost.</li>
+    </ul>
+    <h3>Examples</h3>
+    <ul>
+      <li>The kick plays twice on one stroke: let the beater bounce against the head, and raise Mask Time until the extra sound stops.</li>
+      <li>Speed check: at 240 BPM, sixteenth notes on one pedal are 62.5 ms apart (60000 ÷ BPM ÷ 4). A Mask Time
+        of 64 ms would drop them; 10 ms is safe.</li>
+      <li>A very tight flam or drag on one pad disappears: lower it.</li>
+    </ul>
+    <p class="tip"><b>Tip:</b> keep it as low as you can. If one hit produces two or more sounds,
+      Roland suggests adjusting <a href="#retrig">Retrig Cancel</a>.</p>
+  </section>
+
+  <section id="rimgain">
+    <h2>Rim Gain</h2>
+    <p class="meta">0–3.2 · per input · module: TRIGGER → F1 BANK → F5 ADVANCE → F2 RIM<br>
+      For PD-125/120/105/85/80R, PD-9/8/7, CY series, VH-12/11 and RT-5S</p>
+    <p>The same idea as Sensitivity, but for the rim or cymbal edge. Higher makes it loud even when
+      played softly; lower keeps it quieter even when played hard.</p>
+    <h3>What it can affect</h3>
+    <ul>
+      <li>Rim shot and rim click volume on snare and toms.</li>
+      <li>Edge volume on cymbals, relative to the bow.</li>
+    </ul>
+    <h3>Examples</h3>
+    <ul>
+      <li>Crash edge hits are much louder than bow hits: lower it.</li>
+      <li>Rim shots are weak compared with head hits: raise it.</li>
+    </ul>
+  </section>
+
+  <section id="rimshot">
+    <h2>RimShot Adjust</h2>
+    <p class="meta">0–8.0 · per input · module: TRIGGER → F1 BANK → F5 ADVANCE → F2 RIM<br>
+      For PD-125/120/105/85/80R and RT-5S</p>
+    <p>How readily the module detects a hit as a rim shot.</p>
+    <h3>What it can affect</h3>
+    <ul>
+      <li>Rim sounds appearing when you only meant to hit the head.</li>
+      <li>How easy real rim shots are to play.</li>
+    </ul>
+    <h3>Examples</h3>
+    <ul>
+      <li>A hard head hit sometimes plays a rim sound: lower it.</li>
+      <li>Real rim shots become hard to get after lowering it: you went too far, so raise it a little.</li>
+    </ul>
+  </section>
+
+  <section id="xstick">
+    <h2>XStick Threshold</h2>
+    <p class="meta">0–127 · one value in the editor, not per input · module: TRIGGER → F1 BANK → F5 ADVANCE → F2 RIM<br>
+      For PD-125/120/105/85/80R and RT-5S</p>
+    <p>The crossover between a cross stick and a rim shot: softer rim hits below the point play the
+      cross stick sound, harder ones the rim shot sound.</p>
+    <h3>What it can affect</h3>
+    <ul>
+      <li>How easily you get cross sticks.</li>
+      <li>Open rim shots accidentally playing a cross stick.</li>
+    </ul>
+    <h3>Examples</h3>
+    <ul>
+      <li>Cross sticks often come out as rim shots: raise it.</li>
+      <li>Rim shots sometimes play a cross stick as well: lower it.</li>
+      <li>You never want cross sticks: at 0, a cross stick plays the open rim shot sound.</li>
+    </ul>
+    <p class="tip"><b>Tip:</b> cross stick also has to be enabled in the drum kit on the module, and a
+      software drum library has its own rim and cross stick mapping. Check those if nothing changes.</p>
+  </section>
+
+  <section id="xtalk">
+    <h2>Xtalk Cancel</h2>
+    <p class="meta">OFF, then steps of 5 · per input · module: TRIGGER → F1 BANK → F4 XTALK → F1<br>
+      The editor allows up to 80; the module's upper limit isn't confirmed yet</p>
+    <p>Stops a pad from sounding when vibration from another pad reaches it (crosstalk). Set it on
+      the pad that sounds <b>by mistake</b>, not on the pad you actually hit. It works between pads
+      in the same <b>Xtalk Group</b>, which is set on the module (F4 XTALK → F3 GROUP).</p>
+    <h3>What it can affect</h3>
+    <ul>
+      <li>Ghost sounds from pads sharing a stand.</li>
+      <li>Simultaneous hits: too high and the softer of two pads hit together may not sound.</li>
+    </ul>
+    <h3>Examples</h3>
+    <ul>
+      <li>Hitting the snare also sounds tom 1: put both in the same group and raise Xtalk Cancel on <b>tom 1</b>.</li>
+      <li>A soft tom note goes missing when played together with a loud snare hit: lower it on the tom.</li>
+      <li>Crosstalk won't go away: try moving the pads further apart.</li>
+    </ul>
+    <p class="tip"><b>Tip:</b> use the lowest value that works. Changing Trig Type doesn't reset this setting.</p>
+  </section>
+
+  <section id="fix">
+    <h2>Find the setting by symptom</h2>
+    <div class="wrap"><table>
+      <tr><th>What happens</th><th>Try first</th><th>Then</th></tr>
+      <tr><td>Everything feels wrong on one pad</td><td><a href="#type">Trig Type</a></td><td>Check the pad and cable</td></tr>
+      <tr><td>Normal and hard hits sound the same</td><td><a href="#sens">Sensitivity</a> down</td><td><a href="#curve">Curve</a> EXP1</td></tr>
+      <tr><td>Must hit very hard to get volume</td><td><a href="#sens">Sensitivity</a> up</td><td><a href="#curve">Curve</a> LOG1</td></tr>
+      <tr><td>Ghost notes are missing</td><td><a href="#thresh">Threshold</a> down</td><td><a href="#sens">Sensitivity</a> up</td></tr>
+      <tr><td>Same hit, different volume</td><td><a href="#scan">Scan Time</a> up</td><td>Check <a href="#type">Trig Type</a></td></tr>
+      <tr><td>One hit plays twice</td><td><a href="#retrig">Retrig Cancel</a> up</td><td><a href="#mask">Mask Time</a> up</td></tr>
+      <tr><td>Kick plays twice per stroke</td><td><a href="#mask">Mask Time</a> up</td><td><a href="#retrig">Retrig Cancel</a> up</td></tr>
+      <tr><td>Fast notes or rolls drop out</td><td><a href="#mask">Mask Time</a> down</td><td><a href="#retrig">Retrig Cancel</a> down</td></tr>
+      <tr><td>A pad sounds when another is hit</td><td><a href="#xtalk">Xtalk Cancel</a> up on that pad</td><td><a href="#thresh">Threshold</a> up</td></tr>
+      <tr><td>Head hits play a rim sound</td><td><a href="#rimshot">RimShot Adjust</a> down</td><td>Check <a href="#type">Trig Type</a></td></tr>
+      <tr><td>Rim or edge is too loud or quiet</td><td><a href="#rimgain">Rim Gain</a></td><td></td></tr>
+      <tr><td>Cross stick and rim shot get mixed up</td><td><a href="#xstick">XStick Threshold</a></td><td>Kit cross stick setting</td></tr>
+    </table></div>
+  </section>
+
+  <section id="order">
+    <h2>A tuning order</h2>
+    <p class="muted">A suggested order for this project, working from settings that change the most to the least.</p>
+    <ol>
+      <li><a href="#type">Trig Type</a>, because it resets most of the others.</li>
+      <li><a href="#sens">Sensitivity</a>, using your softest and hardest hits.</li>
+      <li><a href="#thresh">Threshold</a>, just high enough to stop false triggers.</li>
+      <li><a href="#curve">Curve</a>, to shape the feel.</li>
+      <li><a href="#retrig">Retrig Cancel</a> and <a href="#mask">Mask Time</a>, only if you get double notes.</li>
+      <li><a href="#rimgain">Rim Gain</a>, <a href="#rimshot">RimShot Adjust</a> and <a href="#xstick">XStick Threshold</a> on rimmed pads.</li>
+      <li><a href="#xtalk">Xtalk Cancel</a>, with the whole kit set up on its stand.</li>
+    </ol>
+    <p>Change one setting at a time, and play between changes. If a pad gets worse, the backup restores it.</p>
+  </section>
+
+  <section id="defaults">
+    <h2>Default values per pad</h2>
+    <p class="muted">What the module loads when you choose a Trig Type, recorded from one TD-12 on the SNARE input.
+      All curves default to LINEAR. A dash means Roland doesn't list that setting for the pad.
+      On the KICK input, a new type keeps the input's own Rim Gain and RimShot values.</p>
+    <div class="wrap"><table>
+      <thead><tr><th>Trig Type</th><th>For</th><th>Sens</th><th>Thresh</th><th>Scan</th><th>Retrig</th><th>Mask</th><th>Rim Gain</th><th>RimShot</th></tr></thead>
+      <tbody id="default-rows"></tbody>
+    </table></div>
+  </section>
+
+  <section id="missing">
+    <h2>Not in the editor yet</h2>
+    <p>Set these on the module for now:</p>
+    <ul>
+      <li><b>Xtalk Group</b> and <b>Mount Type</b> (PAD or CYMBAL), under F4 XTALK.</li>
+      <li><b>Hi-hat settings</b>, under F3 HI-HAT: controller type, offset, foot splash, noise cancel, CC settings.</li>
+      <li><b>3-way trigger</b> for a CY-15R or CY-12R/C ride, under F5 ADVANCE → F3.</li>
+      <li>Choosing the <b>active bank</b>, drum kits and patterns.</li>
+    </ul>
+  </section>
+</main>
+<script>
+  // Rough curve shapes; x and y run from 0 to 1.
+  const shapes = {
+    LINEAR: x => x, EXP1: x => x ** 2, EXP2: x => x ** 3, LOG1: x => x ** 0.5, LOG2: x => x ** 0.33,
+    SPLINE: x => x * x * x * (x * (6 * x - 15) + 10), LOUD1: x => 0.65 + 0.35 * x, LOUD2: x => 0.8 + 0.2 * x,
+  };
+  document.getElementById('curves').innerHTML = Object.entries(shapes).map(([name, f]) => {
+    const pts = Array.from({ length: 41 }, (_, i) => {
+      const x = i / 40;
+      return `${(4 + x * 92).toFixed(1)},${(66 - f(x) * 62).toFixed(1)}`;
+    }).join(' ');
+    return `<figure><svg viewBox="0 0 100 70" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="currentColor" stroke-width="2.5"/></svg>${name}</figure>`;
+  }).join('');
+
+  // Recorded from the module: type, model, sens, thresh, scan, retrig, mask, rim gain, rimshot.
+  const rows = `PD125|PD-125|7|2|2.0|4|6|2.2|3.0
+PD120|PD-120|6|2|2.0|4|6|1.8|2.2
+PD105|PD-105|6|2|2.0|4|6|2.1|2.3
+PD100|PD-100|6|2|2.0|4|6|2.1|2.3
+PD80R|PD-85, PD-80R, PD-80|5|2|2.0|4|6|1.5|2.7
+PD9|PD-9|8|2|1.2|2|4|1.5|2.7
+PD8|PD-8|8|2|1.2|2|4|1.6|2.7
+PD7|PD-7|8|2|1.2|2|4|1.4|2.7
+PD6|PD-6|7|2|1.2|2|4|1.4|2.7
+KD120|KD-120|12|5|2.0|9|10|1.4|2.7
+KD80|KD-85, KD-80|10|4|2.0|6|10|1.4|2.7
+KD8|KD-8|6|6|1.6|4|10|1.4|2.7
+KD7|KD-7|7|6|1.6|6|10|1.4|2.7
+CY15R|CY-15R|9|5|1.6|10|10|0.8|2.7
+CY12RC|CY-12R/C|8|7|1.6|10|12|0.8|2.7
+CY14C|CY-14C|8|5|1.6|10|10|0.8|2.7
+CY8|CY-8|12|2|2.0|6|10|1.1|2.7
+CY6|CY-6|10|2|2.0|6|10|1.0|2.7
+CY12H|CY-12H|8|1|1.6|3|6|1.0|2.7
+VH12|VH-12|13|5|1.6|3|4|1.0|2.7
+VH11|VH-11|10|6|1.6|3|4|1.0|2.7
+PAD1|Non-Roland pad|7|2|1.6|4|8|1.0|2.7
+PAD2|Non-Roland pad|7|5|2.4|8|12|1.0|2.7
+RT7K|RT-7K|7|10|3.5|14|10|1.0|2.7
+RT5S|RT-5S|6|6|2.0|4|10|1.6|2.4
+RT3T|RT-3T|15|6|3.0|14|10|1.6|2.4`;
+  // Pads Roland lists for each rim setting; for the others the stored value does nothing.
+  const rimGain = /^(PD125|PD120|PD105|PD80R|PD9|PD8|PD7|CY|VH|RT5S)/;
+  const rimShot = /^(PD125|PD120|PD105|PD80R|RT5S)/;
+  document.getElementById('default-rows').innerHTML = rows.split('\n').map(r => {
+    const c = r.split('|');
+    if (!rimGain.test(c[0])) c[7] = '–';
+    if (!rimShot.test(c[0])) c[8] = '–';
+    return `<tr>${c.map(v => `<td>${v}</td>`).join('')}</tr>`;
+  }).join('');
+</script>
+</body>
+</html>
