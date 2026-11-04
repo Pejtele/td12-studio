@@ -6,6 +6,8 @@ import {
 
 // Set to a Ko-fi / Gumroad / Buy Me a Coffee URL to show the support section.
 const SUPPORT_URL = 'https://ko-fi.com/pejtele';
+// GoatCounter site code (the "xyz" of xyz.goatcounter.com). Empty = no analytics.
+const GOATCOUNTER_CODE = '';
 
 const IDLE_MS = 1500;     // silence that ends a dump
 const GAP_MS = 60;        // between DT1 packets (Roland: at least 40 ms)
@@ -35,6 +37,7 @@ $('connect').onclick = async () => {
   s.midi.onstatechange = fillPorts;
   fillPorts();
   $('connect').disabled = true;
+  count('midi-connected');
 };
 
 function fillPorts() {
@@ -90,6 +93,7 @@ function onMessage(e) {
 
 function onIdentity(id) {
   s.identity = id;
+  count('revision-' + id.revision.replace(/ /g, '-'));
   const known = KNOWN_REVISIONS.includes(id.revision);
   $('identity').textContent = `Roland TD-12 found · device ID ${id.device + 1} · revision ${id.revision}` +
     (known ? ' · verified version, editing allowed' :
@@ -125,6 +129,7 @@ function endOfDump() {
     return say('A new dump arrived, but you have unsent edits. "Revert edits" loads the new dump.');
   }
   load(dump, bytes);
+  count('dump-read');
   say(`Read all four trigger banks at ${new Date().toLocaleTimeString()}.` +
     (canWrite() ? ' Edit, then send.' : ' Read-only (see step 1).'), 'ok');
 }
@@ -147,6 +152,7 @@ function verify(dump, bytes) {
   });
   s.state = 'idle';
   if (bad.length) {
+    count('verify-failed');
     say(`✗ Bank ${bad.map(b => b.number).join(', ')} on the TD-12 does not match what was sent. ` +
       'Your edits are still here; send again. A poor USB-MIDI cable can garble SysEx.', 'bad');
     return refresh();
@@ -154,6 +160,7 @@ function verify(dump, bytes) {
   const numbers = s.sent.map(b => b.number);
   s.sent = [];
   load(dump, bytes);
+  count('send-verified');
   say(numbers.length > 1 ? `✓ Verified: banks ${numbers.join(', ')} on the TD-12 now match exactly.`
     : `✓ Verified: bank ${numbers[0]} on the TD-12 now matches exactly.`, 'ok');
 }
@@ -329,6 +336,37 @@ function say(text, kind = '') {
 }
 
 if (SUPPORT_URL) { $('support-link').href = SUPPORT_URL; $('support').hidden = false; }
+
+// Anonymous counts only: event names, never settings or backups.
+function count(event) {
+  if (window.goatcounter && window.goatcounter.count) {
+    window.goatcounter.count({ path: event, title: event, event: true });
+  }
+}
+
+function excluded() {
+  try {
+    if (location.hash === '#toggle-analytics') {
+      if (localStorage.getItem('skipgc')) localStorage.removeItem('skipgc');
+      else localStorage.setItem('skipgc', 't');
+      history.replaceState(null, '', location.pathname);
+    }
+    return !!localStorage.getItem('skipgc');
+  } catch {
+    return false;
+  }
+}
+
+const skip = excluded();
+if (skip) $('analytics-self').textContent = ' This browser is excluded from the counts.';
+if (GOATCOUNTER_CODE) $('analytics').hidden = false;
+if (GOATCOUNTER_CODE && !skip && !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)) {
+  const tag = document.createElement('script');
+  tag.async = true;
+  tag.src = 'https://gc.zgo.at/count.js';
+  tag.dataset.goatcounter = `https://${GOATCOUNTER_CODE}.goatcounter.com/count`;
+  document.head.append(tag);
+}
 
 fetch(new URL('../td12_studio/trig_types.json', import.meta.url))
   .then(r => r.ok ? r.json() : null)
