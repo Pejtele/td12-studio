@@ -33,6 +33,30 @@ def load_templates():
         return {}
 
 
+def add_table(box, grid, titles):
+    """Show a filled grid (rows from 1) under column titles that stay put while the rows scroll."""
+    scroll = Gtk.ScrolledWindow(vexpand=True); scroll.set_child(grid)
+    header = Gtk.Grid(column_spacing=grid.get_column_spacing())
+    # Shares the sideways scrolling, so the titles follow the rows.
+    header_scroll = Gtk.ScrolledWindow(hadjustment=scroll.get_hadjustment(),
+                                       hscrollbar_policy=Gtk.PolicyType.EXTERNAL,
+                                       vscrollbar_policy=Gtk.PolicyType.NEVER)
+    header_scroll.set_child(header)
+    box.append(header_scroll)
+    box.append(scroll)
+    sizes = []
+    for col, title in enumerate(titles):
+        label = Gtk.Label(label=title, xalign=0); label.add_css_class('heading')
+        header.attach(label, col, 0, 1, 1)
+        sizes.append(Gtk.SizeGroup(mode=Gtk.SizeGroupMode.HORIZONTAL))
+        sizes[col].add_widget(label)
+    child = grid.get_first_child()
+    while child:
+        sizes[grid.query_child(child)[0]].add_widget(child)
+        child = child.get_next_sibling()
+    return header
+
+
 class Editor(Gtk.ApplicationWindow):
     def __init__(self, app):
         super().__init__(application=app, title='TD-12 Trigger Editor')
@@ -81,10 +105,6 @@ class Editor(Gtk.ApplicationWindow):
         root.append(self.status)
 
         grid = Gtk.Grid(column_spacing=8, row_spacing=4)
-        scroll = Gtk.ScrolledWindow(vexpand=True); scroll.set_child(grid); root.append(scroll)
-        for col, title in enumerate(['Input', 'Trig Type'] + [f.label for f in FIELDS]):
-            label = Gtk.Label(label=title, xalign=0); label.add_css_class('heading')
-            grid.attach(label, col, 0, 1, 1)
         for slot, name in enumerate(INPUTS):
             grid.attach(Gtk.Label(label=f'{slot + 1} {name}', xalign=0), 0, slot + 1, 1, 1)
             types = Gtk.DropDown(model=Gtk.StringList.new(TRIG_TYPES))
@@ -103,6 +123,7 @@ class Editor(Gtk.ApplicationWindow):
                     w.connect('value-changed', self.on_field, slot, field)
                 grid.attach(w, col, slot + 1, 1, 1)
                 self.widgets[slot, field.key] = w
+        self.header = add_table(root, grid, ['Input', 'Trig Type'] + [f.label for f in FIELDS])
 
         self.changes = Gtk.Label(xalign=0, wrap=True, selectable=True)
         root.append(self.changes)
