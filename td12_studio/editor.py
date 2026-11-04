@@ -1,7 +1,7 @@
-"""GTK4 trigger editor: read a bank by dump, edit mapped fields, send, verify.
+"""GTK4 trigger editor: read a bank by dump, edit mapped fields, send.
 
-Writes go only to the bank shown, only after a live read in this session, and
-every send is followed by a verification dump that must match byte for byte.
+Writes go only to the bank shown and only after a live read in this session.
+A dump after a send is optional; when one arrives it is checked against the send.
 """
 from datetime import datetime
 from pathlib import Path
@@ -10,14 +10,15 @@ import queue
 import time
 import gi
 gi.require_version('Gtk', '4.0')
-from gi.repository import Gtk, GLib
+from gi.repository import Gtk, GLib, Gio
 import mido
 from .midi import PollingInput, backend, choose_port, ports
 from .protocol import inspect_dump
-from .trigger import Bank, FIELDS, INPUTS, TRIG_TYPES, CURVES, XSTICK
+from .trigger import Bank, FIELDS, INPUTS, TRIG_TYPES, CURVES, XSTICK, bank_base
 
 CAPTURES = Path.home() / '.local/share/td12-studio/captures'
 TEMPLATES = Path(__file__).with_name('trig_types.json')
+MANUAL = Path(__file__).resolve().parents[1] / 'web' / 'manual.html'
 IDLE = 1.5          # silence that ends a dump
 GAP_MS = 60         # between DT1 packets (manual: at least 40 ms)
 FULL_DUMP = 60      # ALL TRIG BANKS = 4 x 15 packets; a 15-packet echo of our send is ignored
@@ -71,6 +72,9 @@ class Editor(Gtk.ApplicationWindow):
         self.send_button.add_css_class('suggested-action')
         self.send_button.connect('clicked', self.confirm_send)
         top.append(self.send_button)
+        manual_button = Gtk.Button(label='Settings manual')
+        manual_button.connect('clicked', lambda *_: Gio.AppInfo.launch_default_for_uri(MANUAL.as_uri(), None))
+        top.append(manual_button)
 
         self.status = Gtk.Label(xalign=0, wrap=True)
         self.status.add_css_class('title-4')
@@ -221,7 +225,7 @@ class Editor(Gtk.ApplicationWindow):
 
     def confirm_send(self, *_):
         dialog = Gtk.AlertDialog(message=f'Send bank {self.bank.number} “{self.bank.name}” to the TD-12?',
-                                 detail=self.changes.get_text() + '\n\nAfterwards you will be asked for one dump to verify it.',
+                                 detail=self.changes.get_text(),
                                  buttons=['Cancel', 'Send'], cancel_button=0, default_button=1)
         dialog.choose(self, None, self.on_confirm)
 
@@ -255,8 +259,13 @@ class Editor(Gtk.ApplicationWindow):
             if packets:
                 return True
             self.output.close()
-            self.state = 'verify'
-            self.say('Sent. Now dump ALL TRIG BANKS on the TD-12 to verify.')
+            self.state = 'idle'
+            # What was sent is the new starting point for further edits.
+            base = bank_base(self.sent.number)
+            self.memory.update({base + i: value for i, value in enumerate(self.sent.packed)})
+            self.show_bank()
+            self.set_rows_sensitive(True)
+            self.say(f'Sent bank {self.sent.number} at {datetime.now():%H:%M:%S}. Keep editing.')
             return False
         GLib.timeout_add(GAP_MS, step)
 
@@ -288,28 +297,22 @@ class Editor(Gtk.ApplicationWindow):
         report, memory = inspect_dump(data)
         banks = [n for n in range(1, 5) if f'Trigger bank {n}' in report['blocks']]
         if report['valid_td12_packets'] < FULL_DUMP or report['errors'] or len(banks) < 4:
-            # 15 packets is the module echoing our own send back (MIDI soft thru).
-            if self.state != 'sending' and report['valid_td12_packets'] != 15:
+            # Multiples of 15 are the module echoing our own sends back (MIDI soft thru).
+            if self.state != 'sending' and report['valid_td12_packets'] % 15:
                 self.say(f'Ignored incomplete data ({report["valid_td12_packets"]} packets). '
                          'Dump ALL TRIG BANKS (not ALL, not one bank).')
             return
         stamp = datetime.now().strftime('%Y%m%d-%H%M%S')
         CAPTURES.mkdir(parents=True, exist_ok=True)
         (CAPTURES / f'{stamp}-editor-read.syx').write_bytes(data)
-        if self.state == 'verify':
-            got = Bank.from_memory(memory, self.sent.number)
-            if bytes(got.original) == bytes(self.sent.packed):
-                self.state = 'idle'
-                self.memory = memory
-                self.show_bank()
-                self.set_rows_sensitive(True)
-                self.say(f'✓ Verified: bank {self.sent.number} on the TD-12 now matches exactly.')
-            else:
-                self.fail(f'✗ The dump does not match what was sent to bank {self.sent.number}. '
-                          'Your edits are still shown; you can send again.')
-            return
+        note = ''
+        if self.sent:
+            same = Bank.from_memory(memory, self.sent.number).original == bytes(self.sent.packed)
+            note = (f' ✓ Bank {self.sent.number} matches the last send.' if same else
+                    f' ✗ Bank {self.sent.number} does NOT match the last send; values shown are from the module.')
+            self.sent = None
         if self.bank and self.bank.changes():
-            self.say('A dump arrived, but you have unsent edits. Click "Revert edits" to load the new dump.')
+            self.say('A dump arrived, but you have unsent edits. Click "Revert edits" to load the new dump.' + note)
             self.memory = memory
             return
         self.memory = memory
@@ -320,7 +323,7 @@ class Editor(Gtk.ApplicationWindow):
         self.bank_pick.set_sensitive(True)
         self.set_rows_sensitive(True)
         self.show_bank()
-        self.say(f'Read from TD-12 at {datetime.now():%H:%M:%S}. Edit, then send.')
+        self.say(f'Read from TD-12 at {datetime.now():%H:%M:%S}. Edit, then send.' + note)
 
     def on_close(self, *_):
         if self.input:
