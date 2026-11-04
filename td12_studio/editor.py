@@ -9,8 +9,9 @@ import json
 import queue
 import time
 import gi
+gi.require_version('Gdk', '4.0')
 gi.require_version('Gtk', '4.0')
-from gi.repository import Gtk, GLib, Gio
+from gi.repository import Gdk, Gtk, GLib, Gio
 import mido
 from .midi import PollingInput, backend, choose_port, ports
 from .protocol import inspect_dump
@@ -31,6 +32,33 @@ def load_templates():
         return {int(k): bytes(v) for k, v in json.loads(TEMPLATES.read_text()).items()}
     except (OSError, ValueError):
         return {}
+
+
+def guard_scroll(widget):
+    """The wheel changes a field only once it is selected; otherwise it scrolls the page."""
+    def on_scroll(controller, dx, dy):
+        if widget.get_state_flags() & Gtk.StateFlags.FOCUS_WITHIN:
+            return False
+        scroll = widget.get_ancestor(Gtk.ScrolledWindow)
+        if scroll:
+            wheel = controller.get_unit() == Gdk.ScrollUnit.WHEEL
+            for adjustment, delta in ((scroll.get_hadjustment(), dx), (scroll.get_vadjustment(), dy)):
+                step = adjustment.get_page_size() ** (2 / 3) if wheel else 1
+                adjustment.set_value(adjustment.get_value() + delta * step)
+        return True
+    controller = Gtk.EventControllerScroll(flags=Gtk.EventControllerScrollFlags.BOTH_AXES)
+    controller.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
+    controller.connect('scroll', on_scroll)
+    widget.add_controller(controller)
+
+
+def guard_fields(widget):
+    if isinstance(widget, (Gtk.SpinButton, Gtk.DropDown)):
+        return guard_scroll(widget)
+    child = widget.get_first_child()
+    while child:
+        guard_fields(child)
+        child = child.get_next_sibling()
 
 
 def add_table(box, grid, titles):
@@ -131,6 +159,9 @@ class Editor(Gtk.ApplicationWindow):
             'To read or verify: on the TD-12 press SETUP → F1 (MIDI) → F5 (BULK), choose ALL TRIG BANKS, '
             'press F5 (EXECUTE). Every dump is saved in ~/.local/share/td12-studio/captures.')))
 
+        guard_fields(root)
+        # GTK selects the first field on opening; start with none selected.
+        self.connect('map', lambda *_: GLib.idle_add(self.set_focus, None))
         self.set_rows_sensitive(False)
         try:
             inputs, outputs = ports()
