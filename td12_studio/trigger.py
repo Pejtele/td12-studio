@@ -12,6 +12,7 @@ BANK_UNPACKED = 1612
 INPUT_BASE, INPUT_STRIDE = 52, 104   # 15 input blocks end exactly at 1612
 NAME_LENGTH = 12
 XSTICK = 26                          # bank-level XStick Thrshld
+THREE_WAY = 20      # 1 = 3Way Trigger on (bow, bell and edge on RIDE and EDGE)
 PACKET = 128
 
 INPUTS = ['KICK', 'SNARE', 'TOM 1', 'TOM 2', 'TOM 3', 'HI-HAT', 'CRASH 1',

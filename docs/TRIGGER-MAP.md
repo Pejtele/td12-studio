@@ -12,6 +12,8 @@ bytes `00 02 00 00`.
 - Unpacked 0–11: bank name, ASCII, space padded.
 - Unpacked 26: XStick Thrshld (changed when the SNARE value was edited; may be
   snare-only. Not repeated per input).
+- Unpacked 20: 3Way Trigger, 0 = OFF, 1 = ON (toggled on the module, 2026-11-04; changed exactly
+  this byte). The EDGE Trig Type byte stays as it was; the module just shows RD CTRL.
 - Writes: send the whole bank as DT1, ≤128 bytes per packet, 60 ms gap
   (`scripts/restore_test.py`). Accepted without any extra internal checksum.
 - The active trigger bank number is not in the trigger banks (bank select changed nothing).
